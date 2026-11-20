@@ -36,6 +36,7 @@ label{display:block;font-size:12px;color:var(--mt);margin:8px 0 2px}input[type=t
 .creator{margin-left:auto;font-size:12px;color:var(--mt)}.creator a{color:var(--ac);text-decoration:none}.creator b{color:var(--tx)}
 footer.site{margin:8px 12px 20px;padding:12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);font-size:12px;color:var(--mt);display:flex;gap:14px;flex-wrap:wrap;justify-content:space-between;align-items:center}
 footer.site a{color:var(--ac);text-decoration:none}footer.site b{color:var(--tx)}#vis{display:flex;gap:12px;flex-wrap:wrap}
+.mi .dm{flex:none;padding:0 7px;line-height:20px;border:0;background:transparent;color:#b3261e;font-size:13px;border-radius:4px}.mi .dm:hover{background:#b3261e;color:#fff}.mi{align-items:center}
 </style></head><body>
 <div id="toast"></div><header><h1>Kho bản vẽ</h1>
 <div class="steps"><span>1. Nhập file</span><span>2. Quét nhận dạng</span><span>3. Chỉnh sửa</span><span>4. Lưu trữ → HTML</span></div><button id="quit" title="Thoát và xóa hết file bản vẽ đang mở" style="margin-left:auto">⏻ Thoát &amp; xóa file</button><div class="creator" style="margin-left:0">Người tạo: <b>Người Hoài Niệm</b> · ĐT <a href="tel:0906813544">0906813544</a> · <a href="mailto:nguoihoainiem@gmail.com">nguoihoainiem@gmail.com</a></div></header>
@@ -395,7 +396,20 @@ function zoom(){if(!cur)return;$('wrap').style.width=(cur.w*$('zm').value/100)+'
 function open(m){cur=m;$('ares').innerHTML='';msel.clear();undo.length=0;redo.length=0;ubtn();lp=[];showLasso();$('lpan').style.display='none';rc=null;showRect(null);sel=0;selC=-1;$('im').src=m.img;zoom();draw();renderList();renderObjs();
   checkMsg()}
 function renderList(){const l=$('ml');l.innerHTML='';maps.forEach(m=>{const d=document.createElement('div');d.className='mi'+(m==cur?' a':'');
-  d.innerHTML='<span></span><small>'+(m.done?(m.sc?'✓ '+Object.keys(m.sc).length+'/4 loại':'✓ đã quét'):'chưa quét')+'</small>';d.firstChild.textContent=m.name;d.onclick=()=>open(m);l.appendChild(d)})}
+  d.innerHTML='<span></span><small>'+(m.done?(m.sc?'✓ '+Object.keys(m.sc).length+'/4 loại':'✓ đã quét'):'chưa quét')+'</small>';d.firstChild.textContent=m.name;d.onclick=()=>open(m);
+  const x=document.createElement('button');x.className='dm';x.textContent='✕';x.title='Xóa trang này';x.setAttribute('aria-label','Xóa trang '+m.name);x.onclick=e=>{e.stopPropagation();delMap(m)};d.appendChild(x);l.appendChild(d)})}
+/* xóa từng trang / bản vẽ khỏi danh sách (mỗi trang của PDF là một mục riêng) */
+function delMap(m){const i=maps.indexOf(m);if(i<0)return;
+  if(!confirm('Xóa “'+m.name+'” khỏi danh sách?\nKết quả đã quét/chỉnh sửa của trang này cũng sẽ mất.'))return;
+  maps.splice(i,1);try{if(db)db.transaction('r','readwrite').objectStore('r').delete(m.id)}catch(e){}
+  [undo,redo].forEach(a=>a.splice(0,a.length,...a.filter(u=>u.m!==m)));msel.clear();
+  if(cur===m){
+    if(maps.length){open(maps[Math.min(i,maps.length-1)])}
+    else{cur=null;sel=0;selC=-1;const im=$('im');im.removeAttribute('src');
+      ['ov','acv'].forEach(id=>{const c=$(id);if(c){c.width=1;c.height=1}});$('wrap').style.width='';
+      $('ed').style.display='none';$('ol').innerHTML='';$('ares').innerHTML='';$('exp').innerHTML='';
+      $('stat').textContent='Chưa có bản vẽ.';try{ubtn()}catch(e){}}}
+  renderList();say('✓ Đã xóa “'+m.name+'”. Còn '+maps.length+' bản vẽ.')}
 function renderObjs(){showExp();mui();uiState();
   const l=$('ol');l.innerHTML='';if(!cur||!cur.done){$('ed').style.display='none';return}
   const f=$('flt').value;Object.values(cur.objs).filter(o=>!f||o.type==f).sort((a,b)=>a.name.localeCompare(b.name,'vi',{numeric:true,sensitivity:'base'})).slice(0,600).forEach(o=>{
