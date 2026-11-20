@@ -38,7 +38,7 @@ footer.site{margin:8px 12px 20px;padding:12px;border:1px solid var(--bd);border-
 footer.site a{color:var(--ac);text-decoration:none}footer.site b{color:var(--tx)}#vis{display:flex;gap:12px;flex-wrap:wrap}
 </style></head><body>
 <div id="toast"></div><header><h1>Kho bản vẽ</h1>
-<div class="steps"><span>1. Nhập file</span><span>2. Quét nhận dạng</span><span>3. Chỉnh sửa</span><span>4. Lưu trữ → HTML</span></div><div class="creator">Người tạo: <b>Người Hoài Niệm</b> · ĐT <a href="tel:0906813544">0906813544</a> · <a href="mailto:nguoihoainiem@gmail.com">nguoihoainiem@gmail.com</a></div></header>
+<div class="steps"><span>1. Nhập file</span><span>2. Quét nhận dạng</span><span>3. Chỉnh sửa</span><span>4. Lưu trữ → HTML</span></div><button id="quit" title="Thoát và xóa hết file bản vẽ đang mở" style="margin-left:auto">⏻ Thoát &amp; xóa file</button><div class="creator" style="margin-left:0">Người tạo: <b>Người Hoài Niệm</b> · ĐT <a href="tel:0906813544">0906813544</a> · <a href="mailto:nguoihoainiem@gmail.com">nguoihoainiem@gmail.com</a></div></header>
 <main>
 <section class="card"><h2>Bước 1 · Thư mục lưu trữ</h2>
 <div id="drop">Kéo thả PDF / ảnh vào đây<br>hoặc <button id="pick">Chọn nhiều file</button></div>
@@ -1072,7 +1072,13 @@ function fallbackSave(html){
   d.innerHTML='<b>Trình duyệt chưa tải trực tiếp được. Bấm “Sao chép”, dán vào Notepad rồi lưu thành kho-ban-ve.html (mã hoá UTF-8).</b><textarea style="flex:1" readonly></textarea><div class="tb"><button class="p" id="fbc">Sao chép</button><button id="fbx">Đóng</button></div>';
   const t=d.querySelector('textarea');t.value=html;$('fbc').onclick=()=>{t.select();document.execCommand('copy');say('Đã sao chép nội dung file.')};$('fbx').onclick=()=>d.remove()}
 $('save').onclick=()=>saveAll();$('prev').onclick=previewHtml;
-openDB().then(loadAll).then(()=>{renderList();if(maps.length)open(maps[0])});
+/* Thoát ứng dụng = xóa hết file bản vẽ đã nhập (giữ lại cơ sở dữ liệu ký hiệu mẫu 'csdl') */
+function wipeMaps(){return new Promise(r=>{try{if(!db)return r();const tx=db.transaction('r','readwrite'),st=tx.objectStore('r'),q=st.getAllKeys();
+  q.onsuccess=()=>{(q.result||[]).forEach(k=>{if(k!=='csdl')st.delete(k)})};tx.oncomplete=()=>r();tx.onerror=()=>r();tx.onabort=()=>r()}catch(e){r()}})}
+$('quit').onclick=async()=>{if(!confirm('Thoát và xóa hết các file bản vẽ đang mở?\nHãy bấm “Bước 4 · Lưu trữ” trước nếu cần giữ lại kết quả.'))return;
+  await wipeMaps();maps=[];cur=null;location.reload()};
+/* Mở ứng dụng mới (đã đóng tab/trình duyệt) → bắt đầu sạch; chỉ tải lại trang (F5) thì vẫn giữ file */
+openDB().then(()=>{let fresh=true;try{fresh=!sessionStorage.getItem('kbv_app');sessionStorage.setItem('kbv_app','1')}catch(e){}return fresh?wipeMaps():0}).then(loadAll).then(()=>{renderList();if(maps.length)open(maps[0])});
 </script><footer class="site">
 <div><b>Kho bản vẽ – Đọc hiểu bản vẽ</b> · Ứng dụng miễn phí. Dữ liệu xử lý ngay trên máy bạn, không tải lên máy chủ.<br>
 Liên hệ: ĐT <a href="tel:0906813544">0906813544</a> · Email <a href="mailto:nguoihoainiem@gmail.com">nguoihoainiem@gmail.com</a></div>
